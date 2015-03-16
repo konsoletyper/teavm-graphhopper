@@ -16,6 +16,8 @@
 package org.teavm.graphhopper;
 
 import com.graphhopper.routing.Path;
+import org.teavm.jso.JS;
+import org.teavm.jso.JSArray;
 
 /**
  *
@@ -23,12 +25,16 @@ import com.graphhopper.routing.Path;
  */
 public class Client {
     public static void main(String[] args) {
+        JSArray<DataEntry> array = JS.createArray(100);
+
+        ClientSideGraphHopper graphHopper = new ClientSideGraphHopper();
+        graphHopper.load(array);
+
         double startLat = 37.418703;
         double startLon = 55.747844;
         double endLat = 37.70859;
         double endLon = 55.784829;
 
-        ClientSideGraphHopper graphHopper = new ClientSideGraphHopper();
         int start = graphHopper.findNode(startLat, startLon);
         int end = graphHopper.findNode(endLat, endLon);
 
