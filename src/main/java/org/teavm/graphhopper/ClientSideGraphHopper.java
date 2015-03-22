@@ -66,7 +66,8 @@ public class ClientSideGraphHopper {
         locationIndex.loadExisting();
 
         weighting = new FastestWeighting(encoder);
-        prepare = new PrepareContractionHierarchies(graph, encoder, weighting, TraversalMode.EDGE_BASED_2DIR);
+        prepare = new PrepareContractionHierarchies(directory, graph, encoder, weighting,
+                TraversalMode.EDGE_BASED_2DIR);
 
         if (logger.isInfoEnabled()) {
             logger.info("GraphHopper initialized in {}ms", System.currentTimeMillis() - start);
