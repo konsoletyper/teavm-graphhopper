@@ -23,6 +23,7 @@
 
   <name>TeaVM port of GraphHopper</name>
   <description>TeaVM port of GraphHopper</description>
+  <packaging>pom</packaging>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,73 +32,54 @@
     <graphhopper.version>0.5-SNAPSHOT</graphhopper.version>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.teavm</groupId>
-      <artifactId>teavm-core</artifactId>
-      <version>${teavm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.teavm</groupId>
-      <artifactId>teavm-classlib</artifactId>
-      <version>${teavm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.teavm</groupId>
-      <artifactId>teavm-jso</artifactId>
-      <version>${teavm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.teavm</groupId>
-      <artifactId>teavm-dom</artifactId>
-      <version>${teavm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.teavm</groupId>
-      <artifactId>teavm-extras-slf4j</artifactId>
-      <version>${teavm.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.graphhopper</groupId>
-      <artifactId>graphhopper</artifactId>
-      <version>${graphhopper.version}</version>
-    </dependency>
-  </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-core</artifactId>
+        <version>${teavm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-classlib</artifactId>
+        <version>${teavm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-jso</artifactId>
+        <version>${teavm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-dom</artifactId>
+        <version>${teavm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-extras-slf4j</artifactId>
+        <version>${teavm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.graphhopper</groupId>
+        <artifactId>graphhopper</artifactId>
+        <version>${graphhopper.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.teavm</groupId>
-        <artifactId>teavm-maven-plugin</artifactId>
-        <version>${teavm.version}</version>
-        <executions>
-          <execution>
-            <id>web-client</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>build-javascript</goal>
-            </goals>
-            <configuration>
-              <targetDirectory>${project.build.directory}/generated/js/teavm</targetDirectory>
-              <mainClass>org.teavm.graphhopper.Client</mainClass>
-              <runtime>SEPARATE</runtime>
-              <minifying>true</minifying>
-              <debugInformationGenerated>true</debugInformationGenerated>
-              <sourceMapsGenerated>true</sourceMapsGenerated>
-              <sourceFilesCopied>true</sourceFilesCopied>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>

@@ -24,10 +24,12 @@ import com.graphhopper.storage.DataAccess;
 import com.graphhopper.storage.LevelGraphStorage;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.util.shapes.BBox;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teavm.jso.JS;
-import org.teavm.jso.JSArray;
 
 /**
  *
@@ -43,12 +45,12 @@ public class ClientSideGraphHopper {
     private Weighting weighting;
     private PrepareContractionHierarchies prepare;
 
-    public void load(JSArray<DataEntry> data) {
+    public void load(InputStream input) throws IOException {
         if (logger.isInfoEnabled()) {
             logger.info("Loading GraphGopper directory");
         }
         long start = System.currentTimeMillis();
-        loadStorage(data);
+        loadStorage(new DataInputStream(input));
         if (logger.isInfoEnabled()) {
             logger.info("GraphHopper directory loaded in {}ms", System.currentTimeMillis() - start);
         }
@@ -78,19 +80,23 @@ public class ClientSideGraphHopper {
         return graph.getBounds();
     }
 
-    private void loadStorage(JSArray<DataEntry> data) {
-        for (int i = 0; i < data.getLength(); ++i) {
-            DataEntry entry = data.get(i);
-            DataAccess file = directory.find(entry.getName());
-            file.setSegmentSize(entry.getSegmentSize());
-            file.create(entry.getLength());
-            int pos = 0;
-            for (int j = 0; j < entry.getData().getLength(); ++j) {
-                byte[] bytes = Base64.decode(JS.unwrapString(entry.getData().get(j)));
-                file.setBytes(pos, bytes, bytes.length);
-                pos += bytes.length;
+    private void loadStorage(DataInput input) throws IOException {
+        short entryCount = input.readShort();
+        for (int i = 0; i < entryCount; ++i) {
+            String entryName = input.readUTF();
+            DataAccess file = directory.find(entryName);
+            file.setSegmentSize(input.readInt());
+            long length = input.readLong();
+            file.create(length);
+            byte[] buffer = new byte[4096];
+            for (long pos = 0; pos < length; pos += buffer.length) {
+                int chunkSize = (int)Math.min(buffer.length, length - pos);
+                input.readFully(buffer, 0, chunkSize);
+                file.setBytes(pos, buffer, chunkSize);
             }
-            byte[] header = Base64.decode(entry.getHeader());
+            int headerLength = input.readInt();
+            byte[] header = new byte[headerLength];
+            input.readFully(header);
             for (int j = 0; j < 80; j += 4) {
                 int val = (header[j] & 0xFF) | ((header[j + 1] & 0xFF) << 8) | ((header[j + 2] & 0xFF) << 16) |
                         ((header[j + 3] & 0xFF) << 24);
