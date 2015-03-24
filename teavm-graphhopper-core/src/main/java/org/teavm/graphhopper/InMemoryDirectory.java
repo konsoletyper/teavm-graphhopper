@@ -19,6 +19,7 @@ import com.graphhopper.storage.DAType;
 import com.graphhopper.storage.DataAccess;
 import com.graphhopper.storage.Directory;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,5 +68,11 @@ public class InMemoryDirectory implements Directory {
     @Override
     public DAType getDefaultType() {
         return DAType.RAM;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Collection<DataAccess> getAll() {
+        return (Collection<DataAccess>)(Collection<?>)dataAccessMap.values();
     }
 }
