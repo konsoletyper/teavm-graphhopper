@@ -27,7 +27,11 @@ import java.io.*;
  * @author Alexey Andreev
  */
 public class GraphHopperFileBuilder {
-    private String folderName = "gh-folder";
+    private String folderName;
+
+    public GraphHopperFileBuilder() {
+        this("gh-folder");
+    }
 
     public GraphHopperFileBuilder(String folderName) {
         this.folderName = folderName;
@@ -53,14 +57,20 @@ public class GraphHopperFileBuilder {
 
             long length = da.getSegmentSize() * (long)da.getSegments();
             output.writeLong(length);
-            byte[] buffer = new byte[4096];
-            for (long pos = 0; pos < length; pos += buffer.length) {
-                int chunkSize = (int)Math.min(buffer.length, length - pos);
-                da.getBytes(pos, buffer, chunkSize);
-                output.write(buffer, 0, chunkSize);
+            for (long pos = 0; pos < length; pos += 4) {
+                output.writeInt(da.getInt(pos));
             }
 
+            output.writeInt(20);
+            for (int i = 0; i < 20; ++i) {
+                output.writeInt(da.getHeader(i));
+            }
+        }
+    }
 
+    public static void main(String[] args) throws IOException {
+        try (OutputStream output = new BufferedOutputStream(new FileOutputStream(args[1], false))) {
+            new GraphHopperFileBuilder().build(args[0], output);
         }
     }
 }

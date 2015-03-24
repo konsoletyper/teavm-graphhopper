@@ -87,6 +87,7 @@ public class Client {
                 callback.complete(result);
             }
         });
+        xhr.open("get", "moscow-russia.gh");
         xhr.send();
     }
 }

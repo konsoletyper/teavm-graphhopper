@@ -32,34 +32,46 @@
       <groupId>org.teavm.graphhopper</groupId>
       <artifactId>teavm-graphhopper-core</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
-          <groupId>org.teavm</groupId>
-          <artifactId>teavm-maven-plugin</artifactId>
-          <version>${teavm.version}</version>
-          <executions>
-            <execution>
-              <id>web-client</id>
-              <phase>prepare-package</phase>
-              <goals>
-                <goal>build-javascript</goal>
-              </goals>
-              <configuration>
-                <targetDirectory>${project.build.directory}/generated/js/teavm</targetDirectory>
-                <mainClass>org.teavm.graphhopper.webapp.Client</mainClass>
-                <runtime>SEPARATE</runtime>
-                <minifying>true</minifying>
-                <debugInformationGenerated>true</debugInformationGenerated>
-                <sourceMapsGenerated>true</sourceMapsGenerated>
-                <sourceFilesCopied>true</sourceFilesCopied>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <webResources>
+            <resource>
+              <directory>${project.build.directory}/generated/js</directory>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.teavm</groupId>
+        <artifactId>teavm-maven-plugin</artifactId>
+        <version>${teavm.version}</version>
+        <executions>
+          <execution>
+            <id>web-client</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>build-javascript</goal>
+            </goals>
+            <configuration>
+              <targetDirectory>${project.build.directory}/generated/js/teavm</targetDirectory>
+              <mainClass>org.teavm.graphhopper.webapp.Client</mainClass>
+              <runtime>SEPARATE</runtime>
+              <minifying>false</minifying>
+              <debugInformationGenerated>true</debugInformationGenerated>
+              <sourceMapsGenerated>true</sourceMapsGenerated>
+              <sourceFilesCopied>true</sourceFilesCopied>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

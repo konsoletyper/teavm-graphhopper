@@ -32,6 +32,11 @@
     <graphhopper.version>0.5-SNAPSHOT</graphhopper.version>
   </properties>
 
+  <modules>
+    <module>teavm-graphhopper-core</module>
+    <module>teavm-graphhopper-webapp</module>
+  </modules>
+
   <dependencyManagement>
     <dependencies>
       <dependency>

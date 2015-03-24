@@ -95,12 +95,9 @@ public class ClientSideGraphHopper {
                 file.setBytes(pos, buffer, chunkSize);
             }
             int headerLength = input.readInt();
-            byte[] header = new byte[headerLength];
-            input.readFully(header);
-            for (int j = 0; j < 80; j += 4) {
-                int val = (header[j] & 0xFF) | ((header[j + 1] & 0xFF) << 8) | ((header[j + 2] & 0xFF) << 16) |
-                        ((header[j + 3] & 0xFF) << 24);
-                file.setHeader(j, val);
+            int[] header = new int[headerLength];
+            for (int j = 0; j < header.length; ++j) {
+                file.setHeader(j, input.readInt());
             }
         }
     }
