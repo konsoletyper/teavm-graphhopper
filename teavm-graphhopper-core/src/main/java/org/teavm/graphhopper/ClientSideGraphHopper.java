@@ -15,6 +15,7 @@
  */
 package org.teavm.graphhopper;
 
+import com.graphhopper.routing.AStarBidirection;
 import com.graphhopper.routing.AlgorithmOptions;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
@@ -59,12 +60,12 @@ public class ClientSideGraphHopper {
             logger.info("Initializing GraphHopper");
         }
         start = System.currentTimeMillis();
-        encodingManager = new EncodingManager(new CarFlagEncoder());
-        graph = new LevelGraphStorage(directory, encodingManager, true);
         encoder = new CarFlagEncoder();
+        encodingManager = new EncodingManager(encoder);
+        graph = new LevelGraphStorage(directory, encodingManager, true);
         graph.loadExisting();
 
-        locationIndex = new LocationIndexTree(graph, directory);
+        locationIndex = new LocationIndexTree(graph.getBaseGraph(), directory);
         locationIndex.loadExisting();
 
         weighting = new FastestWeighting(encoder);
@@ -88,16 +89,13 @@ public class ClientSideGraphHopper {
             file.setSegmentSize(input.readInt());
             long length = input.readLong();
             file.create(length);
-            byte[] buffer = new byte[4096];
-            for (long pos = 0; pos < length; pos += buffer.length) {
-                int chunkSize = (int)Math.min(buffer.length, length - pos);
-                input.readFully(buffer, 0, chunkSize);
-                file.setBytes(pos, buffer, chunkSize);
+            for (long pos = 0; pos < length; pos += 4) {
+                file.setInt(pos, input.readInt());
             }
             int headerLength = input.readInt();
             int[] header = new int[headerLength];
             for (int j = 0; j < header.length; ++j) {
-                file.setHeader(j, input.readInt());
+                file.setHeader(j * 4, input.readInt());
             }
         }
     }
@@ -114,7 +112,8 @@ public class ClientSideGraphHopper {
     public Path route(int from, int to) {
         long start = System.currentTimeMillis();
         AlgorithmOptions algOptions = new AlgorithmOptions(AlgorithmOptions.ASTAR_BI, encoder, weighting);
-        RoutingAlgorithm algo = prepare.createAlgo(graph, algOptions);
+        RoutingAlgorithm algo = new AStarBidirection(graph, encoder, weighting, TraversalMode.EDGE_BASED_2DIR);
+        //prepare.createAlgo(graph, algOptions);
         Path path = algo.calcPath(from, to);
         if (logger.isInfoEnabled()) {
             logger.info("Path from {} to {} found in {} ms. Distance is {}", from, to,

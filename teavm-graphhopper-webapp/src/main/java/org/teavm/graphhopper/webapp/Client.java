@@ -41,10 +41,10 @@ public class Client {
     public void start() {
         init();
 
-        double startLat = 37.418703;
-        double startLon = 55.747844;
-        double endLat = 37.70859;
-        double endLon = 55.784829;
+        double startLat = 55.747844;
+        double startLon = 37.418703;
+        double endLat = 55.784829;
+        double endLon = 37.70859;
 
         int start = graphHopper.findNode(startLat, startLon);
         int end = graphHopper.findNode(endLat, endLon);

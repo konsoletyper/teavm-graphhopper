@@ -46,6 +46,7 @@ public class GraphHopperFileBuilder {
                 .setGraphHopperLocation(folderName)
                 .setOSMFile(osmFile)
                 .setInMemory()
+                .setElevation(true)
                 .setEncodingManager(new EncodingManager(new CarFlagEncoder()));
         gh.importOrLoad();
 
@@ -63,7 +64,7 @@ public class GraphHopperFileBuilder {
 
             output.writeInt(20);
             for (int i = 0; i < 20; ++i) {
-                output.writeInt(da.getHeader(i));
+                output.writeInt(da.getHeader(i * 4));
             }
         }
     }
