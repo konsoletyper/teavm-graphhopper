@@ -17,11 +17,9 @@ package org.teavm.graphhopper.webapp;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import com.graphhopper.routing.Path;
 import org.teavm.dom.ajax.ReadyStateChangeHandler;
 import org.teavm.dom.ajax.XMLHttpRequest;
 import org.teavm.dom.browser.Window;
-import org.teavm.graphhopper.ClientSideGraphHopper;
 import org.teavm.javascript.spi.Async;
 import org.teavm.jso.JS;
 import org.teavm.platform.async.AsyncCallback;
@@ -32,31 +30,16 @@ import org.teavm.platform.async.AsyncCallback;
  */
 public class Client {
     private static Window window = (Window)JS.getGlobal();
-    private ClientSideGraphHopper graphHopper = new ClientSideGraphHopper();
 
     public static void main(String[] args) {
         new Client().start();
     }
 
     public void start() {
-        init();
-
-        double startLat = 55.747844;
-        double startLon = 37.418703;
-        double endLat = 55.784829;
-        double endLon = 37.70859;
-
-        int start = graphHopper.findNode(startLat, startLon);
-        int end = graphHopper.findNode(endLat, endLon);
-
-        Path path = graphHopper.route(start, end);
-        System.out.println(path.getDistance());
-    }
-
-    private void init() {
+        GraphHopperUI ui = new GraphHopperUI();
         byte[] data = loadData();
         try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
-            graphHopper.load(input);
+            ui.load(input);
         } catch (IOException e) {
             throw new RuntimeException("Error loading data", e);
         }
