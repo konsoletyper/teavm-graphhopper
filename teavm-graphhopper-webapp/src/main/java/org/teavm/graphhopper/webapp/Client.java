@@ -37,6 +37,7 @@ public class Client {
 
     public void start() {
         GraphHopperUI ui = new GraphHopperUI();
+        window.getDocument().getBody().appendChild(ui.getElement());
         byte[] data = loadData();
         try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
             ui.load(input);
