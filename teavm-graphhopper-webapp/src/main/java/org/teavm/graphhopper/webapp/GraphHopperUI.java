@@ -5,6 +5,7 @@ import com.graphhopper.util.Instruction;
 import com.graphhopper.util.InstructionList;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.shapes.BBox;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import org.teavm.dom.browser.Window;
 import org.teavm.dom.html.HTMLDocument;
 import org.teavm.dom.html.HTMLElement;
 import org.teavm.graphhopper.ClientSideGraphHopper;
+import org.teavm.graphhopper.storage.InMemoryDirectory;
 import org.teavm.graphhopper.webapp.leaflet.LatLng;
 import org.teavm.graphhopper.webapp.leaflet.LatLngBounds;
 import org.teavm.graphhopper.webapp.leaflet.LeafletEventListener;
@@ -34,7 +36,7 @@ public class GraphHopperUI {
     private static HTMLDocument document = window.getDocument();
     private HTMLElement element;
     private LeafletMap map;
-    private ClientSideGraphHopper graphHopper = new ClientSideGraphHopper();
+    private ClientSideGraphHopper graphHopper;
     private Marker firstMarker;
     private Marker secondMarker;
     private Polyline pathDisplay;
@@ -65,7 +67,9 @@ public class GraphHopperUI {
     }
 
     public void load(InputStream input) throws IOException {
-        graphHopper.load(input);
+        InMemoryDirectory directory = new InMemoryDirectory();
+        directory.load(new DataInputStream(input));
+        graphHopper  = new ClientSideGraphHopper(directory);
         BBox bounds = graphHopper.getBounds();
         LatLng southWest = LatLng.create(bounds.minLat, bounds.minLon);
         LatLng northEast = LatLng.create(bounds.maxLat, bounds.maxLon);

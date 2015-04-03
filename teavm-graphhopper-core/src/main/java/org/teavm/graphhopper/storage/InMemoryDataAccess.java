@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.teavm.graphhopper;
+package org.teavm.graphhopper.storage;
 
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -39,7 +39,7 @@ public class InMemoryDataAccess implements DataAccess {
     protected final BitUtil bitUtil;
     private String name;
 
-    public InMemoryDataAccess(InMemoryDirectory directory, String name, ByteOrder order) {
+    InMemoryDataAccess(InMemoryDirectory directory, String name, ByteOrder order) {
         this.directory = directory;
         this.name = name;
         bitUtil = BitUtil.get(order);

@@ -19,15 +19,16 @@ import com.graphhopper.routing.AlgorithmOptions;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
 import com.graphhopper.routing.ch.PrepareContractionHierarchies;
-import com.graphhopper.routing.util.*;
-import com.graphhopper.storage.DataAccess;
+import com.graphhopper.routing.util.CarFlagEncoder;
+import com.graphhopper.routing.util.EncodingManager;
+import com.graphhopper.routing.util.FastestWeighting;
+import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.util.TraversalMode;
+import com.graphhopper.routing.util.Weighting;
+import com.graphhopper.storage.Directory;
 import com.graphhopper.storage.LevelGraphStorage;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.util.shapes.BBox;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ClientSideGraphHopper {
     private static final Logger logger = LoggerFactory.getLogger(ClientSideGraphHopper.class);
-    private InMemoryDirectory directory = new InMemoryDirectory();
     private LevelGraphStorage graph;
     private EncodingManager encodingManager;
     private LocationIndexTree locationIndex;
@@ -45,20 +45,11 @@ public class ClientSideGraphHopper {
     private Weighting weighting;
     private PrepareContractionHierarchies prepare;
 
-    public void load(InputStream input) throws IOException {
-        if (logger.isInfoEnabled()) {
-            logger.info("Loading GraphHopper directory");
-        }
-        long start = System.currentTimeMillis();
-        loadStorage(new DataInputStream(input));
-        if (logger.isInfoEnabled()) {
-            logger.info("GraphHopper directory loaded in {}ms", System.currentTimeMillis() - start);
-        }
-
+    public ClientSideGraphHopper(Directory directory) {
         if (logger.isInfoEnabled()) {
             logger.info("Initializing GraphHopper");
         }
-        start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         encoder = new CarFlagEncoder();
         encodingManager = new EncodingManager(encoder);
         graph = new LevelGraphStorage(directory, encodingManager, true);
@@ -78,36 +69,6 @@ public class ClientSideGraphHopper {
 
     public BBox getBounds() {
         return graph.getBounds();
-    }
-
-    private void loadStorage(DataInput input) throws IOException {
-        short entryCount = input.readShort();
-        for (int i = 0; i < entryCount; ++i) {
-            String entryName = input.readUTF();
-            DataAccess file = directory.find(entryName);
-            file.setSegmentSize(input.readInt());
-            long length = input.readLong();
-            file.create(length);
-            byte[] buffer = new byte[(file.getSegmentSize() >> 2) << 2];
-            for (long pos = 0; pos < length; pos += buffer.length) {
-                int bytesToRead = (int)Math.min(length - pos, buffer.length);
-                input.readFully(buffer, 0, bytesToRead);
-                for (int j = 0; j < bytesToRead; j += 4) {
-                    byte tmp = buffer[j];
-                    buffer[j] = buffer[j + 3];
-                    buffer[j + 3] = tmp;
-                    tmp = buffer[j + 1];
-                    buffer[j + 1] = buffer[j + 2];
-                    buffer[j + 2] = tmp;
-                }
-                file.setBytes(pos, buffer, bytesToRead);
-            }
-            int headerLength = input.readInt();
-            int[] header = new int[headerLength];
-            for (int j = 0; j < header.length; ++j) {
-                file.setHeader(j * 4, input.readInt());
-            }
-        }
     }
 
     public int findNode(double lat, double lng) {
