@@ -15,7 +15,6 @@
  */
 package org.teavm.graphhopper;
 
-import com.graphhopper.routing.AStarBidirection;
 import com.graphhopper.routing.AlgorithmOptions;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
@@ -48,7 +47,7 @@ public class ClientSideGraphHopper {
 
     public void load(InputStream input) throws IOException {
         if (logger.isInfoEnabled()) {
-            logger.info("Loading GraphGopper directory");
+            logger.info("Loading GraphHopper directory");
         }
         long start = System.currentTimeMillis();
         loadStorage(new DataInputStream(input));
@@ -70,7 +69,7 @@ public class ClientSideGraphHopper {
 
         weighting = new FastestWeighting(encoder);
         prepare = new PrepareContractionHierarchies(directory, graph, encoder, weighting,
-                TraversalMode.EDGE_BASED_2DIR);
+                TraversalMode.NODE_BASED);
 
         if (logger.isInfoEnabled()) {
             logger.info("GraphHopper initialized in {}ms", System.currentTimeMillis() - start);
@@ -89,8 +88,19 @@ public class ClientSideGraphHopper {
             file.setSegmentSize(input.readInt());
             long length = input.readLong();
             file.create(length);
-            for (long pos = 0; pos < length; pos += 4) {
-                file.setInt(pos, input.readInt());
+            byte[] buffer = new byte[(file.getSegmentSize() >> 2) << 2];
+            for (long pos = 0; pos < length; pos += buffer.length) {
+                int bytesToRead = (int)Math.min(length - pos, buffer.length);
+                input.readFully(buffer, 0, bytesToRead);
+                for (int j = 0; j < bytesToRead; j += 4) {
+                    byte tmp = buffer[j];
+                    buffer[j] = buffer[j + 3];
+                    buffer[j + 3] = tmp;
+                    tmp = buffer[j + 1];
+                    buffer[j + 1] = buffer[j + 2];
+                    buffer[j + 2] = tmp;
+                }
+                file.setBytes(pos, buffer, bytesToRead);
             }
             int headerLength = input.readInt();
             int[] header = new int[headerLength];
@@ -112,8 +122,7 @@ public class ClientSideGraphHopper {
     public Path route(int from, int to) {
         long start = System.currentTimeMillis();
         AlgorithmOptions algOptions = new AlgorithmOptions(AlgorithmOptions.ASTAR_BI, encoder, weighting);
-        RoutingAlgorithm algo = new AStarBidirection(graph, encoder, weighting, TraversalMode.EDGE_BASED_2DIR);
-        //prepare.createAlgo(graph, algOptions);
+        RoutingAlgorithm algo = prepare.createAlgo(graph, algOptions);
         Path path = algo.calcPath(from, to);
         if (logger.isInfoEnabled()) {
             logger.info("Path from {} to {} found in {} ms. Distance is {}", from, to,

@@ -22,7 +22,17 @@
     <script type="text/javascript" charset="utf-8" src="teavm/classes.js"></script>
     <script type="text/javascript" charset="utf-8" src="leaflet/leaflet.js"></script>
     <link rel="stylesheet" type="text/css" href="leaflet/leaflet.css">
+    <link rel="stylesheet" type="text/css" href="style.css">
   </head>
   <body onload="main()">
+    <div id="map"></div>
+    <div id="control-panel">
+      <div><i>Please, click on the map twice to calculate path between points</i></div>
+      <div id="start-panel"><b>From: </b> <span id="start-lat"></span>
+          <span id="start-lon"></span></div>
+      <div id="end-panel"><b>To: </b> <span id="end-lat"></span>
+          <span id="end-lon"></span></div>
+      <div id="distance-panel"><b>Distance: </b> <span id="distance-value"></span> km</div>
+    </div>
   </body>
 </html>

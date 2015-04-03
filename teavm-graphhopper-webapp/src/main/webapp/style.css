@@ -1,0 +1,25 @@
+html, body {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0;
+    margin: 0;
+}
+#map {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 300px;
+    bottom: 0;
+}
+#control-panel {
+    position: absolute;
+    width: 300px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    padding: 5px;
+}

@@ -38,6 +38,8 @@ public class GraphHopperUI {
     private Marker firstMarker;
     private Marker secondMarker;
     private Polyline pathDisplay;
+    private Path path;
+    private List<GraphHopperUIListener> listeners = new ArrayList<>();
 
     public GraphHopperUI() {
         this(document.createElement("div"));
@@ -76,6 +78,18 @@ public class GraphHopperUI {
         return element;
     }
 
+    public LatLng getStart() {
+        return firstMarker != null ? firstMarker.getLatLng() : null;
+    }
+
+    public LatLng getEnd() {
+        return secondMarker != null ? secondMarker.getLatLng() : null;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
     private void click(LatLng latlng) {
         if (secondMarker != null) {
             map.removeLayer(firstMarker);
@@ -83,11 +97,15 @@ public class GraphHopperUI {
             if (pathDisplay != null) {
                 map.removeLayer(pathDisplay);
             }
-            firstMarker = Marker.create(latlng).addTo(map);
+            path = null;
             secondMarker = null;
+            notifyEndChanged();
+            firstMarker = Marker.create(latlng).addTo(map);
+            notifyStartChanged();
             pathDisplay = null;
         } else if (firstMarker == null) {
             firstMarker = Marker.create(latlng).addTo(map);
+            notifyStartChanged();
         } else {
             secondMarker = Marker.create(latlng).addTo(map);
             LatLng first = firstMarker.getLatLng();
@@ -99,7 +117,8 @@ public class GraphHopperUI {
                 window.alert("One of the provided points is outside of the known region");
                 return;
             }
-            Path path = graphHopper.route(firstNode, secondNode);
+            path = graphHopper.route(firstNode, secondNode);
+            notifyEndChanged();
             InstructionList instructions = path.calcInstructions(new TeaVMTranslation());
             List<LatLng> array = new ArrayList<>();
             for (Instruction insn : instructions) {
@@ -109,6 +128,28 @@ public class GraphHopperUI {
                 }
             }
             pathDisplay = Polyline.create(array).addTo(map);
+        }
+    }
+
+    public void addListener(GraphHopperUIListener listener) {
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeListener(GraphHopperUIListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void notifyStartChanged() {
+        for (GraphHopperUIListener listener : listeners) {
+            listener.startChanged();
+        }
+    }
+
+    private void notifyEndChanged() {
+        for (GraphHopperUIListener listener : listeners) {
+            listener.endChanged();
         }
     }
 }
