@@ -13,13 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.teavm.graphhopper;
+package org.teavm.graphhopper.build;
 
 import com.graphhopper.GraphHopper;
 import com.graphhopper.routing.util.CarFlagEncoder;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.storage.DataAccess;
 import com.graphhopper.storage.GHDirectory;
+import com.graphhopper.util.shapes.BBox;
 import java.io.*;
 
 /**
@@ -28,6 +29,7 @@ import java.io.*;
  */
 public class GraphHopperFileBuilder {
     private String folderName;
+    private BBox bounds;
 
     public GraphHopperFileBuilder() {
         this("gh-folder");
@@ -67,6 +69,12 @@ public class GraphHopperFileBuilder {
                 output.writeInt(da.getHeader(i * 4));
             }
         }
+
+        bounds = gh.getGraph().getBounds();
+    }
+
+    public BBox getBounds() {
+        return bounds;
     }
 
     public static void main(String[] args) throws IOException {

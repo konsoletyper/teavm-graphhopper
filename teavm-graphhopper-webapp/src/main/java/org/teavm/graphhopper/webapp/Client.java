@@ -24,7 +24,7 @@ import org.teavm.dom.core.Node;
 import org.teavm.dom.css.ElementCSSInlineStyle;
 import org.teavm.dom.html.HTMLDocument;
 import org.teavm.dom.html.HTMLElement;
-import org.teavm.graphhopper.IndexedDBFile;
+import org.teavm.graphhopper.storage.IndexedDBFile;
 import org.teavm.javascript.spi.Async;
 import org.teavm.jso.JS;
 import org.teavm.platform.async.AsyncCallback;

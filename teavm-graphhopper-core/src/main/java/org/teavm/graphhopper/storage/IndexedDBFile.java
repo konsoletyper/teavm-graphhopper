@@ -1,4 +1,4 @@
-package org.teavm.graphhopper;
+package org.teavm.graphhopper.storage;
 
 import java.io.IOException;
 import java.io.InputStream;
