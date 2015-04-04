@@ -25,14 +25,29 @@
     <link rel="stylesheet" type="text/css" href="style.css">
   </head>
   <body onload="main()">
-    <div id="map"></div>
-    <div id="control-panel">
-      <div><i>Please, click on the map twice to calculate path between points</i></div>
-      <div id="start-panel"><b>From: </b> <span id="start-lat"></span>
-          <span id="start-lon"></span></div>
-      <div id="end-panel"><b>To: </b> <span id="end-lat"></span>
-          <span id="end-lon"></span></div>
-      <div id="distance-panel"><b>Distance: </b> <span id="distance-value"></span> km</div>
+    <div id="hub-view">
+      <h1>Available maps</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Map</th>
+            <th>Status</th>
+          </tr>
+        <thead>
+        <tbody id="hub-rows">
+        </tbody>
+      </table>
+    </div>
+    <div id="map-view" display="none">
+      <div id="map"></div>
+      <div id="control-panel">
+        <div><i>Please, click on the map twice to calculate path between points</i></div>
+        <div id="start-panel"><b>From: </b> <span id="start-lat"></span>
+            <span id="start-lon"></span></div>
+        <div id="end-panel"><b>To: </b> <span id="end-lat"></span>
+            <span id="end-lon"></span></div>
+        <div id="distance-panel"><b>Distance: </b> <span id="distance-value"></span> km</div>
+      </div>
     </div>
   </body>
 </html>

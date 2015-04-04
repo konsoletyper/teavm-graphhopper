@@ -11,7 +11,7 @@ import org.teavm.platform.async.AsyncCallback;
  *
  * @author Alexey Andreev
  */
-public class Transaction {
+public class Transaction implements AutoCloseable {
     private Database database;
     private TransactionMode mode;
     private IDBTransaction nativeTransaction;
@@ -134,5 +134,12 @@ public class Transaction {
 
     public Store store(String name) {
         return new Store(database, nativeTransaction.objectStore(name));
+    }
+
+    @Override
+    public void close() {
+        if (!complete) {
+            commit();
+        }
     }
 }
