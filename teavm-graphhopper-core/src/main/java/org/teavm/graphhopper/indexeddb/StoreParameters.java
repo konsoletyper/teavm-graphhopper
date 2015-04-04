@@ -21,7 +21,7 @@ public class StoreParameters {
         return keyPath;
     }
 
-    public StoreParameters setKeyPath(String[] keyPath) {
+    public StoreParameters setKeyPath(String... keyPath) {
         this.keyPath = keyPath;
         return this;
     }

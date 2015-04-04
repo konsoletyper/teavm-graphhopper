@@ -17,6 +17,7 @@ package org.teavm.graphhopper.webapp;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import org.teavm.dom.ajax.ReadyStateChangeHandler;
 import org.teavm.dom.ajax.XMLHttpRequest;
 import org.teavm.dom.browser.Window;
@@ -24,6 +25,7 @@ import org.teavm.dom.core.Node;
 import org.teavm.dom.css.ElementCSSInlineStyle;
 import org.teavm.dom.html.HTMLDocument;
 import org.teavm.dom.html.HTMLElement;
+import org.teavm.graphhopper.IndexedDBFile;
 import org.teavm.javascript.spi.Async;
 import org.teavm.jso.JS;
 import org.teavm.platform.async.AsyncCallback;
@@ -52,8 +54,7 @@ public class Client {
     public void start() {
         ui = new GraphHopperUI(document.getElementById("map"));
         installControlPanel();
-        byte[] data = loadData();
-        try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
+        try (InputStream input = openFile()) {
             ui.load(input);
         } catch (IOException e) {
             throw new RuntimeException("Error loading data", e);
@@ -125,6 +126,15 @@ public class Client {
         element.getStyle().removeProperty("display");
     }
 
+    private InputStream openFile() throws IOException {
+        @SuppressWarnings("resource")
+        IndexedDBFile file = new IndexedDBFile("moscow");
+        if (!file.exists()) {
+            file.write(loadData());
+        }
+        return file.read();
+    }
+
     @Async
     private native byte[] loadData();
 
@@ -138,7 +148,7 @@ public class Client {
                     return;
                 }
                 if (xhr.getStatus() != 200) {
-                    callback.error(new RuntimeException("Status received from server: " + xhr.getStatus() + " " +
+                    callback.error(new IOException("Status received from server: " + xhr.getStatus() + " " +
                             xhr.getStatusText()));
                     return;
                 }
