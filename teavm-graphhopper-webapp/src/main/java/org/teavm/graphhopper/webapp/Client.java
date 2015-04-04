@@ -15,7 +15,6 @@
  */
 package org.teavm.graphhopper.webapp;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.teavm.dom.ajax.ReadyStateChangeHandler;

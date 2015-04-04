@@ -57,7 +57,8 @@ public class IndexedDBFile implements AutoCloseable {
     }
 
     public boolean exists() {
-        return !JS.isUndefined(database.begin("properties").store("properties").get(JS.wrap("size")));
+        return !JS.isUndefined(database.begin("properties").store("properties")
+                .get(JS.wrap(new String[] { "size" })));
     }
 
     @Override
