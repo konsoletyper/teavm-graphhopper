@@ -1,6 +1,5 @@
 package org.teavm.graphhopper.indexeddb;
 
-import org.teavm.dom.indexeddb.EventHandler;
 import org.teavm.dom.indexeddb.IDBCursor;
 import org.teavm.dom.indexeddb.IDBCursorRequest;
 import org.teavm.dom.indexeddb.IDBRequest;
@@ -20,19 +19,11 @@ public class Cursor {
     Cursor(IDBCursorRequest req) {
         this.req = req;
         this.nativeCursor = req.getResult();
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                nativeCursor = Cursor.this.req.getResult();
-                nextCallback.complete(null);
-            }
+        req.setOnSuccess(() -> {
+            nativeCursor = req.getResult();
+            nextCallback.complete(null);
         });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                nextCallback.error(new IndexedDBException("Error moving further through cursor"));
-            }
-        });
+        req.setOnError(() -> nextCallback.error(new IndexedDBException("Error moving further through cursor")));
     }
 
     public JSObject getKey() {
@@ -50,20 +41,10 @@ public class Cursor {
     @Async
     public native void update(JSObject obj);
 
-    private void update(JSObject obj, final AsyncCallback<Void> callback) {
-        final IDBRequest req = nativeCursor.update(obj);
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.complete(null);
-            }
-        });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.error(new IndexedDBException("Error updating cursor value"));
-            }
-        });
+    private void update(JSObject obj, AsyncCallback<Void> callback) {
+        IDBRequest req = nativeCursor.update(obj);
+        req.setOnSuccess(() -> callback.complete(null));
+        req.setOnError(() -> callback.error(new IndexedDBException("Error updating cursor value")));
     }
 
     public boolean hasNext() {
@@ -89,19 +70,9 @@ public class Cursor {
     @Async
     public native void delete();
 
-    private void delete(final AsyncCallback<Void> callback) {
-        final IDBRequest req = nativeCursor.delete();
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.complete(null);
-            }
-        });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.error(new IndexedDBException("Error deleting item from cursor"));
-            }
-        });
+    private void delete(AsyncCallback<Void> callback) {
+        IDBRequest req = nativeCursor.delete();
+        req.setOnSuccess(() -> callback.complete(null));
+        req.setOnError(() -> callback.error(new IndexedDBException("Error deleting item from cursor")));
     }
 }

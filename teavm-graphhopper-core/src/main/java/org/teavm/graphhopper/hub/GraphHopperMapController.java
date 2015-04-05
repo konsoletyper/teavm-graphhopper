@@ -1,8 +1,7 @@
 package org.teavm.graphhopper.hub;
 
 import java.io.IOException;
-import org.teavm.platform.Platform;
-import org.teavm.platform.PlatformRunnable;
+import java.io.InputStream;
 
 /**
  *
@@ -28,73 +27,74 @@ public class GraphHopperMapController {
         return id;
     }
 
+    public String getName() {
+        EventLoop.requireEventLoop();
+        return localMap != null ? localMap.getName() : remoteMap.getName();
+    }
+
+    public int getSizeInBytes() {
+        EventLoop.requireEventLoop();
+        return remoteMap != null ? remoteMap.getSizeInBytes() : localMap.getSizeInBytes();
+    }
+
     public boolean isLocal() {
+        EventLoop.requireEventLoop();
         return localMap != null;
     }
 
     public boolean isRemote() {
+        EventLoop.requireEventLoop();
         return remoteMap != null;
     }
 
     public boolean isDownloading() {
-        synchronized (this) {
-            return hubController.hub.hasMap(id) && hubController.hub.isUploading(id);
-        }
+        EventLoop.requireEventLoop();
+        return hubController.hub.hasMap(id) && hubController.hub.isUploading(id);
     }
 
     public int getBytesDownloaded() {
+        EventLoop.requireEventLoop();
         return bytesDownloaded;
     }
 
     public void download() {
+        EventLoop.requireEventLoop();
         final GraphHopperRemoteMap remote;
-        synchronized (this) {
-            if (isLocal() || isDownloading()) {
-                throw new IllegalStateException("Map " + id + " is already downloaded");
-            }
-            if (isRemote()) {
-                throw new IllegalStateException("Map " + id + " does not exist remotely");
-            }
-            remote = remoteMap;
-            bytesDownloaded = 0;
+        if (isLocal() || isDownloading()) {
+            throw new IllegalStateException("Map " + id + " is already downloaded");
         }
-        new Thread() {
-            @Override
-            public void run() {
-                synchronized (GraphHopperMapController.this) {
-                    localMap = remote;
+        if (isRemote()) {
+            throw new IllegalStateException("Map " + id + " does not exist remotely");
+        }
+        remote = remoteMap;
+        bytesDownloaded = 0;
+        hubController.hub.upload(remote, remote.open(), new GraphHopperMapUploadListener() {
+            @Override public void progress(int bytes) {
+                for (GraphHopperHubListener listener : hubController.listeners) {
+                    listener.mapStatusChanged(id);
                 }
-                try {
-                    final GraphHopperMapReader reader = remote.open();
-                    hubController.hub.upload(remote, new GraphHopperMapReader() {
-                        @Override
-                        public byte[] next() throws IOException {
-                            byte[] result = reader.next();
-                            bytesDownloaded += result.length;
-                            for (GraphHopperHubListener listener : hubController.listeners) {
-                                listener.mapStatusChanged(id);
-                            }
-                            return result;
-                        }
-                    });
-                } catch (IOException e) {
-                    Platform.postpone(new PlatformRunnable() {
-                        @Override
-                        public void run() {
-                            for (GraphHopperHubListener listener : hubController.listeners) {
-                                listener.mapDownlodError(id);
-                            }
-                        }
-                    });
-                }
-                Platform.postpone(new PlatformRunnable() {
-                    @Override public void run() {
-                        for (GraphHopperHubListener listener : hubController.listeners) {
-                            listener.mapStatusChanged(id);
-                        }
-                    }
-                });
             }
-        }.start();
+            @Override public void failed(Exception e) {
+                for (GraphHopperHubListener listener : hubController.listeners) {
+                    listener.mapDownlodError(id);
+                }
+                for (GraphHopperHubListener listener : hubController.listeners) {
+                    listener.mapStatusChanged(id);
+                }
+            }
+            @Override public void complete() {
+                for (GraphHopperHubListener listener : hubController.listeners) {
+                    listener.mapStatusChanged(id);
+                }
+            }
+        });
+    }
+
+    public InputStream open() throws IOException {
+        EventLoop.requireEventLoop();
+        if (localMap == null) {
+            throw new IllegalStateException("Map " + id + " does not exist locally");
+        }
+        return hubController.hub.download(id);
     }
 }

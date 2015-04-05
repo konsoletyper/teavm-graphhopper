@@ -17,17 +17,20 @@ package org.teavm.graphhopper.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import org.teavm.dom.ajax.ReadyStateChangeHandler;
-import org.teavm.dom.ajax.XMLHttpRequest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.teavm.dom.browser.Window;
 import org.teavm.dom.core.Node;
 import org.teavm.dom.css.ElementCSSInlineStyle;
+import org.teavm.dom.html.HTMLButtonElement;
 import org.teavm.dom.html.HTMLDocument;
 import org.teavm.dom.html.HTMLElement;
-import org.teavm.graphhopper.util.IndexedDBFile;
-import org.teavm.javascript.spi.Async;
+import org.teavm.graphhopper.hub.EventLoop;
+import org.teavm.graphhopper.hub.GraphHopperHubController;
+import org.teavm.graphhopper.hub.GraphHopperHubListener;
+import org.teavm.graphhopper.hub.GraphHopperMapController;
 import org.teavm.jso.JS;
-import org.teavm.platform.async.AsyncCallback;
 
 /**
  *
@@ -44,16 +47,116 @@ public class Client {
     private HTMLElement endLonElement = document.getElementById("end-lon");
     private HTMLElement distanceElement = document.getElementById("distance-panel");
     private HTMLElement distanceValueElement = document.getElementById("distance-value");
+    private HTMLElement hubView = document.getElementById("hub-view");
+    private HTMLElement mapView = document.getElementById("map-view");
+    private HTMLButtonElement refreshButton = (HTMLButtonElement)document.getElementById("refresh-button");
+    private HTMLElement hubRows = document.getElementById("hub-rows");
+    private HTMLElement initializingIndicator = document.getElementById("initializing-indicator");
     private GraphHopperUI ui;
+    private GraphHopperHubController controller;
+    private List<MapWrapper> maps = new ArrayList<>();
 
     public static void main(String[] args) {
-        new Client().start();
+        new Client().start(args.length > 0 ? args[0] : "maps");
     }
 
-    public void start() {
+    public void start(String hubUrl) {
         ui = new GraphHopperUI(document.getElementById("map"));
+        installHub(hubUrl);
         installControlPanel();
-        try (InputStream input = openFile()) {
+    }
+
+    private void installHub(String url) {
+        controller = new GraphHopperHubController(url);
+        controller.addListener(new GraphHopperHubListener() {
+            @Override public void updated() {
+                updateRows();
+            }
+            @Override public void pendingStatusChanged() {
+                refreshButton.setDisabled(!controller.isPendingChanges());
+            }
+            @Override public void offlineStatusChanged() {
+                for (int i = 0; i < maps.size(); ++i) {
+                    updateRow(i);
+                }
+            }
+            @Override public void mapStatusChanged(String mapId) {
+                for (int i = 0; i < maps.size(); ++i) {
+                    if (maps.get(i).map.getId().equals(mapId)) {
+                        updateRow(i);
+                        break;
+                    }
+                }
+            }
+            @Override public void mapDownlodError(String mapId) {
+                window.alert("Error downloading map " + mapId);
+            }
+            @Override public void mapDeleted(String mapId) {
+            }
+            @Override public void initialized() {
+                hideElement(initializingIndicator);
+            }
+        });
+        refreshButton.addEventListener("click", event -> EventLoop.submit(controller::refresh));
+    }
+
+    private void updateRows() {
+        for (MapWrapper wrapper : maps) {
+            wrapper.row.getParentNode().removeChild(wrapper.row);
+        }
+        maps.clear();
+        for (GraphHopperMapController map : controller.getMapControllers()) {
+            MapWrapper wrapper = new MapWrapper();
+            wrapper.map = map;
+            maps.add(wrapper);
+        }
+        Collections.sort(maps, (a, b) -> Integer.compare(a.index, b.index));
+        for (int i = 0; i < maps.size(); ++i) {
+            MapWrapper wrapper = maps.get(i);
+            wrapper.index = i;
+            wrapper.row = document.createElement("tr");
+            hubRows.appendChild(wrapper.row);
+            updateRow(i);
+        }
+    }
+
+    private void updateRow(int index) {
+        MapWrapper wrapper = maps.get(index);
+        if (wrapper.name != null) {
+            wrapper.row.removeChild(wrapper.name);
+        }
+        if (wrapper.status != null) {
+            wrapper.row.removeChild(wrapper.status);
+        }
+
+        wrapper.name = document.createElement("td");
+        wrapper.name.appendChild(document.createTextNode(wrapper.map.getName()));
+        wrapper.row.appendChild(wrapper.name);
+
+        wrapper.status = document.createElement("td");
+        wrapper.row.appendChild(wrapper.status);
+
+        if (wrapper.map.isDownloading()) {
+            wrapper.status.appendChild(document.createTextNode("Downloading (" +
+                    wrapper.map.getBytesDownloaded() + " of " + wrapper.map.getSizeInBytes()));
+        } else if (wrapper.map.isRemote() && !wrapper.map.isLocal() && !controller.isOffline()) {
+            HTMLButtonElement downloadButton = (HTMLButtonElement)document.createElement("button");
+            downloadButton.addEventListener("click", e -> EventLoop.submit(wrapper.map::download));
+            downloadButton.appendChild(document.createTextNode("Download"));
+            wrapper.status.appendChild(downloadButton);
+        } else if (wrapper.map.isLocal()) {
+            HTMLButtonElement openButton = (HTMLButtonElement)document.createElement("button");
+            openButton.addEventListener("click", e -> EventLoop.submit(() -> showMap(wrapper.map.getId())));
+            openButton.appendChild(document.createTextNode("Open"));
+            wrapper.status.appendChild(openButton);
+        }
+    }
+
+    private void showMap(String id) {
+        hideElement(hubView);
+        showElement(mapView);
+        GraphHopperMapController mapController = controller.getMapController(id);
+        try (InputStream input = mapController.open()) {
             ui.load(input);
         } catch (IOException e) {
             throw new RuntimeException("Error loading data", e);
@@ -125,41 +228,11 @@ public class Client {
         element.getStyle().removeProperty("display");
     }
 
-    private InputStream openFile() throws IOException {
-        @SuppressWarnings("resource")
-        IndexedDBFile file = new IndexedDBFile("moscow");
-        if (!file.exists()) {
-            file.write(loadData());
-        }
-        return file.read();
-    }
-
-    @Async
-    private native byte[] loadData();
-
-    private void loadData(final AsyncCallback<byte[]> callback) {
-        final XMLHttpRequest xhr = window.createXMLHttpRequest();
-        xhr.overrideMimeType("text/plain; charset=x-user-defined");
-        xhr.setOnReadyStateChange(new ReadyStateChangeHandler() {
-            @Override
-            public void stateChanged() {
-                if (xhr.getReadyState() != XMLHttpRequest.DONE) {
-                    return;
-                }
-                if (xhr.getStatus() != 200) {
-                    callback.error(new IOException("Status received from server: " + xhr.getStatus() + " " +
-                            xhr.getStatusText()));
-                    return;
-                }
-                String responseText = xhr.getResponseText();
-                byte[] result = new byte[responseText.length()];
-                for (int i = 0; i < result.length; ++i) {
-                    result[i] = (byte)responseText.charAt(i);
-                }
-                callback.complete(result);
-            }
-        });
-        xhr.open("get", "moscow-russia.gh");
-        xhr.send();
+    static class MapWrapper {
+        GraphHopperMapController map;
+        int index;
+        HTMLElement row;
+        HTMLElement name;
+        HTMLElement status;
     }
 }

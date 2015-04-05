@@ -7,6 +7,10 @@ package org.teavm.graphhopper.hub;
 public interface GraphHopperHubListener {
     void offlineStatusChanged();
 
+    void initialized();
+
+    void pendingStatusChanged();
+
     void mapDeleted(String mapId);
 
     void mapStatusChanged(String mapId);

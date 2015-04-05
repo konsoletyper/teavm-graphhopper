@@ -50,6 +50,20 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>net.orfjackal.retrolambda</groupId>
+        <artifactId>retrolambda-maven-plugin</artifactId>
+        <version>1.8.1</version>
+        <executions>
+          <execution>
+            <id>retrolambda</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>process-main</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.teavm</groupId>
         <artifactId>teavm-maven-plugin</artifactId>
         <version>${teavm.version}</version>

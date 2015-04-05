@@ -120,7 +120,8 @@ public class IndexedDBFile implements AutoCloseable {
     }
 
     static abstract class Property implements JSObject {
-        @JSBody(params = { "name", "value" }, script = "return { 'file' : file, 'name' : name, 'value' : value };")
+        @JSBody(params = { "file", "name", "value" },
+                script = "return { 'file' : file, 'name' : name, 'value' : value };")
         public static native Property create(String file, String name, JSObject value);
 
         @JSProperty

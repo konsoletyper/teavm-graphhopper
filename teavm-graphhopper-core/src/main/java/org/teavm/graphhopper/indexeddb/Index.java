@@ -1,6 +1,5 @@
 package org.teavm.graphhopper.indexeddb;
 
-import org.teavm.dom.indexeddb.EventHandler;
 import org.teavm.dom.indexeddb.IDBCountRequest;
 import org.teavm.dom.indexeddb.IDBCursorRequest;
 import org.teavm.dom.indexeddb.IDBGetRequest;
@@ -45,39 +44,19 @@ public class Index {
     @Async
     public native Cursor openCursor(Range range);
 
-    private void openCursor(Range range, final AsyncCallback<Cursor> callback) {
-        final IDBCursorRequest req = nativeIndex.openCursor(range.nativeRange);
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.complete(new Cursor(req));
-            }
-        });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.error(new IndexedDBException("Error creating cursor for store " + getName()));
-            }
-        });
+    private void openCursor(Range range, AsyncCallback<Cursor> callback) {
+        IDBCursorRequest req = range != null ? nativeIndex.openCursor(range.nativeRange) : nativeIndex.openCursor();
+        req.setOnSuccess(() -> callback.complete(new Cursor(req)));
+        req.setOnError(() -> callback.error(new IndexedDBException("Error creating cursor for store " + getName())));
     }
 
     @Async
     public native JSObject get(JSObject key);
 
-    private void get(JSObject key, final AsyncCallback<JSObject> callback) {
-        final IDBGetRequest req = nativeIndex.get(key);
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.complete(req.getResult());
-            }
-        });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.error(new IndexedDBException("Error retrieving value from store " + getName()));
-            }
-        });
+    private void get(JSObject key, AsyncCallback<JSObject> callback) {
+        IDBGetRequest req = nativeIndex.get(key);
+        req.setOnSuccess(() -> callback.complete(req.getResult()));
+        req.setOnError(() -> callback.error(new IndexedDBException("Error retrieving value from store " + getName())));
     }
 
     public int count() {
@@ -87,19 +66,9 @@ public class Index {
     @Async
     private native Integer countImpl();
 
-    private void count(final AsyncCallback<Integer> callback) {
-        final IDBCountRequest req = nativeIndex.count();
-        req.setOnSuccess(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.complete(req.getResult());
-            }
-        });
-        req.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                callback.error(new IndexedDBException("Error retrieving value from store " + getName()));
-            }
-        });
+    private void count(AsyncCallback<Integer> callback) {
+        IDBCountRequest req = nativeIndex.count();
+        req.setOnSuccess(() -> callback.complete(req.getResult()));
+        req.setOnError(() -> callback.error(new IndexedDBException("Error retrieving value from store " + getName())));
     }
 }

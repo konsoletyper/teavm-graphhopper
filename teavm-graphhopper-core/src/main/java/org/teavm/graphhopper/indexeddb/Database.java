@@ -1,14 +1,11 @@
 package org.teavm.graphhopper.indexeddb;
 
-import org.teavm.dom.events.EventListener;
-import org.teavm.dom.indexeddb.EventHandler;
 import org.teavm.dom.indexeddb.IDBDatabase;
 import org.teavm.dom.indexeddb.IDBFactory;
 import org.teavm.dom.indexeddb.IDBObjectStore;
 import org.teavm.dom.indexeddb.IDBObjectStoreParameters;
 import org.teavm.dom.indexeddb.IDBOpenDBRequest;
 import org.teavm.dom.indexeddb.IDBTransaction;
-import org.teavm.dom.indexeddb.IDBVersionChangeEvent;
 import org.teavm.javascript.spi.Async;
 import org.teavm.platform.async.AsyncCallback;
 
@@ -32,26 +29,17 @@ public class Database {
     @Async
     private static native void init(Database database, IDBOpenDBRequest request, DatabaseUpdater updater);
 
-    private static void init(final Database database, final IDBOpenDBRequest request, final DatabaseUpdater updater,
-            final AsyncCallback<Void> callback) {
-        request.setOnSuccess(new EventHandler() {
-            @Override public void handleEvent() {
-                database.nativeDb = request.getResult();
-                callback.complete(null);
-            }
+    private static void init(Database database, IDBOpenDBRequest request, DatabaseUpdater updater,
+            AsyncCallback<Void> callback) {
+        request.setOnSuccess(() -> {
+            database.nativeDb = request.getResult();
+            callback.complete(null);
         });
-        request.setOnError(new EventHandler() {
-            @Override public void handleEvent() {
-                callback.error(new IndexedDBException("Error opening database: " + request + ": " +
-                        request.getError().getName()));
-            }
-        });
-        request.setOnUpgradeNeeded(new EventListener<IDBVersionChangeEvent>() {
-            @Override
-            public void handleEvent(IDBVersionChangeEvent evt) {
-                database.nativeDb = request.getResult();
-                updater.update(database, evt.getOldVersion(), evt.getNewVersion());
-            }
+        request.setOnError(() -> callback.error(new IndexedDBException("Error opening database: " + request + ": " +
+                request.getError().getName())));
+        request.setOnUpgradeNeeded(event -> {
+            database.nativeDb = request.getResult();
+            updater.update(database, event.getOldVersion(), event.getNewVersion());
         });
     }
 

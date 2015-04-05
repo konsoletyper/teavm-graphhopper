@@ -17,7 +17,6 @@ import org.teavm.graphhopper.ClientSideGraphHopper;
 import org.teavm.graphhopper.storage.InMemoryDirectory;
 import org.teavm.graphhopper.webapp.leaflet.LatLng;
 import org.teavm.graphhopper.webapp.leaflet.LatLngBounds;
-import org.teavm.graphhopper.webapp.leaflet.LeafletEventListener;
 import org.teavm.graphhopper.webapp.leaflet.LeafletMap;
 import org.teavm.graphhopper.webapp.leaflet.LeafletMapOptions;
 import org.teavm.graphhopper.webapp.leaflet.LeafletMouseEvent;
@@ -59,11 +58,7 @@ public class GraphHopperUI {
                 .attribution("&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a> " +
                         "contributors"))
                 .addTo(map);
-        map.onClick(new LeafletEventListener<LeafletMouseEvent>() {
-            @Override public void occur(LeafletMouseEvent event) {
-                click(event.getLatlng());
-            }
-        });
+        map.onClick((LeafletMouseEvent event) -> click(event.getLatlng()));
     }
 
     public void load(InputStream input) throws IOException {

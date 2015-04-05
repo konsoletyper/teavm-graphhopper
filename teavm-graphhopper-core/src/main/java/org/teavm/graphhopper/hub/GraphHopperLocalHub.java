@@ -8,12 +8,13 @@ import java.util.Map;
 import java.util.Set;
 import org.teavm.graphhopper.indexeddb.Cursor;
 import org.teavm.graphhopper.indexeddb.Database;
-import org.teavm.graphhopper.indexeddb.DatabaseUpdater;
 import org.teavm.graphhopper.indexeddb.StoreParameters;
 import org.teavm.graphhopper.indexeddb.Transaction;
 import org.teavm.graphhopper.indexeddb.TransactionMode;
 import org.teavm.graphhopper.util.IndexedDBFile;
 import org.teavm.graphhopper.util.IndexedDBFileSystem;
+import static org.teavm.graphhopper.hub.EventLoop.requireEventLoop;
+import static org.teavm.graphhopper.hub.EventLoop.submit;
 
 /**
  *
@@ -31,12 +32,7 @@ public class GraphHopperLocalHub {
 
     public GraphHopperLocalHub(String name) {
         fs = new IndexedDBFileSystem(name + "-fs");
-        database = Database.open(name, 1, new DatabaseUpdater() {
-            @Override
-            public void update(Database database, int oldVersion, int newVersion) {
-                createSchema(database);
-            }
-        });
+        database = Database.open(name, 1, (database, oldVersion, newVersion) -> createSchema(database));
         try (Transaction tx = database.begin("maps")) {
             for (Cursor cursor = tx.store("maps").openCursor(); cursor.hasNext(); cursor.next()) {
                 GraphHopperLocalMap map = (GraphHopperLocalMap)cursor.getValue();
@@ -49,68 +45,97 @@ public class GraphHopperLocalHub {
         database.createStore("maps", new StoreParameters().setKeyPath("id"));
     }
 
-    public synchronized GraphHopperLocalMap[] getMaps() {
+    public GraphHopperLocalMap[] getMaps() {
+        requireEventLoop();
         return maps.values().toArray(new GraphHopperLocalMap[0]);
     }
 
-    public synchronized GraphHopperLocalMap getMap(String id) {
+    public GraphHopperLocalMap getMap(String id) {
+        requireEventLoop();
         return maps.get(id);
     }
 
     public InputStream download(String id) throws IOException {
-        synchronized (uploadingMaps) {
-            if (uploadingMaps.contains(id)) {
-                throw new IllegalStateException("Map is not uploaded yet");
-            }
+        requireEventLoop();
+        if (!maps.containsKey(id)) {
+            return null;
         }
-        synchronized (this) {
-            GraphHopperLocalMap map = maps.get(id);
-            if (map == null) {
-                return null;
-            }
-            return fs.file(id).read();
+        if (uploadingMaps.contains(id)) {
+            throw new IllegalStateException("Map is not uploaded yet");
         }
+        GraphHopperLocalMap map = maps.get(id);
+        if (map == null) {
+            return null;
+        }
+        return fs.file(id).read();
     }
 
-    public synchronized boolean hasMap(String id) {
+    public boolean hasMap(String id) {
+        requireEventLoop();
         return maps.containsKey(id);
     }
 
     public boolean isUploading(String id) {
-        synchronized (uploadingMaps) {
-            return uploadingMaps.contains(id);
+        requireEventLoop();
+        return uploadingMaps.contains(id);
+    }
+
+    public void deleteMap(String id) {
+        requireEventLoop();
+        if (maps.containsKey(id)) {
+            fs.file(id).delete();
+            maps.remove(id);
+            uploadingMaps.remove(id);
         }
     }
 
-    public void upload(GraphHopperLocalMap map, GraphHopperMapReader reader) throws IOException {
-        synchronized (uploadingMaps) {
-            if (!uploadingMaps.add(map.getId())) {
-                throw new IllegalStateException("Already uploading map " + map.getId());
-            }
+    public void upload(final GraphHopperLocalMap map, final GraphHopperMapReader reader,
+            GraphHopperMapUploadListener listener) {
+        requireEventLoop();
+        if (!uploadingMaps.add(map.getId())) {
+            throw new IllegalStateException("Already uploading map " + map.getId());
         }
-        IndexedDBFile file;
-        synchronized (this) {
-            try (Transaction tx = database.begin(TransactionMode.READ_WRITE, "maps")) {
-                tx.store("maps").put(map);
-            }
-            maps.put(map.getId(), map);
-            file = fs.file(map.getId());
-            file.clear();
-        }
-        while (true) {
-            byte[] chunk = reader.next();
-            if (chunk == null) {
-                break;
-            }
-            synchronized (this) {
-                if (!maps.containsKey(map.getId())) {
-                    break;
+        maps.put(map.getId(), map);
+        new Thread(() -> {
+            IndexedDBFile file = null;
+            try {
+                try (Transaction tx = database.begin(TransactionMode.READ_WRITE, "maps")) {
+                    tx.store("maps").put(map);
                 }
-                file.append(chunk);
+                file = fs.file(map.getId());
+                file.clear();
+                int pos = 0;
+                while (true) {
+                    byte[] chunk = reader.next();
+                    if (chunk == null) {
+                        break;
+                    }
+                    file.append(chunk);
+                    pos += chunk.length;
+                    int bytesUploaded = pos;
+                    submit(() -> listener.progress(bytesUploaded));
+                }
+            } catch (Exception e) {
+                try {
+                    if (file != null) {
+                        file.delete();
+                    }
+                } catch (Exception e2) {
+                    // Ignore
+                }
+                submit(() -> {
+                    if (uploadingMaps.remove(map.getId())) {
+                        listener.failed(e);
+                    } else {
+                        listener.complete();
+                    }
+                });
+                return;
             }
-        }
-        synchronized (uploadingMaps) {
-            uploadingMaps.remove(map.getId());
-        }
+            submit(() -> {
+                uploadingMaps.remove(map.getId());
+                listener.complete();
+            });
+        }, "upload-" + map.getId()).start();
     }
 }

@@ -27,6 +27,12 @@
   <body onload="main()">
     <div id="hub-view">
       <h1>Available maps</h1>
+      <div>
+        <button id="refresh-button" disabled>Refresh</button>
+        <span> </span>
+        <span id="online-indicator">offline</span>
+        <span> </span>
+      </div>
       <table>
         <thead>
           <tr>
@@ -37,8 +43,9 @@
         <tbody id="hub-rows">
         </tbody>
       </table>
+      <div id="initializing-indicator">Donwloading map metadata...</div>
     </div>
-    <div id="map-view" display="none">
+    <div id="map-view" style="display:none">
       <div id="map"></div>
       <div id="control-panel">
         <div><i>Please, click on the map twice to calculate path between points</i></div>

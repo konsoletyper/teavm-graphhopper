@@ -1,8 +1,5 @@
 package org.teavm.graphhopper.indexeddb;
 
-import org.teavm.dom.events.Event;
-import org.teavm.dom.events.EventListener;
-import org.teavm.dom.indexeddb.EventHandler;
 import org.teavm.dom.indexeddb.IDBTransaction;
 import org.teavm.javascript.spi.Async;
 import org.teavm.platform.async.AsyncCallback;
@@ -22,44 +19,35 @@ public class Transaction implements AutoCloseable {
     private boolean abort;
     private boolean finished;
 
-    Transaction(Database database, TransactionMode mode, final IDBTransaction nativeTransaction) {
+    Transaction(Database database, TransactionMode mode, IDBTransaction nativeTransaction) {
         this.database = database;
         this.mode = mode;
         this.nativeTransaction = nativeTransaction;
-        nativeTransaction.setOnComplete(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                complete = true;
-                if (commitCallback != null) {
-                    AsyncCallback<Void> callback = commitCallback;
-                    commitCallback = null;
-                    callback.complete(null);
-                }
+        nativeTransaction.setOnComplete(() -> {
+            complete = true;
+            if (commitCallback != null) {
+                AsyncCallback<Void> callback = commitCallback;
+                commitCallback = null;
+                callback.complete(null);
             }
         });
-        nativeTransaction.setOnAbort(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                complete = true;
-                if (abortCallback != null) {
-                    AsyncCallback<Void> callback = abortCallback;
-                    abortCallback = null;
-                    callback.complete(null);
-                }
+        nativeTransaction.setOnAbort(() -> {
+            complete = true;
+            if (abortCallback != null) {
+                AsyncCallback<Void> callback = abortCallback;
+                abortCallback = null;
+                callback.complete(null);
             }
         });
-        nativeTransaction.setOnError(new EventHandler() {
-            @Override
-            public void handleEvent() {
-                if (commitCallback != null) {
-                    commitCallback.error(new IndexedDBException("Error commiting transation: " +
-                            nativeTransaction.getError().getName()));
-                    commitCallback = null;
-                } else if (abortCallback != null) {
-                    abortCallback.error(new IndexedDBException("Error aborting transation: " +
-                            nativeTransaction.getError().getName()));
-                    abortCallback = null;
-                }
+        nativeTransaction.setOnError(() -> {
+            if (commitCallback != null) {
+                commitCallback.error(new IndexedDBException("Error commiting transation: " +
+                        nativeTransaction.getError().getName()));
+                commitCallback = null;
+            } else if (abortCallback != null) {
+                abortCallback.error(new IndexedDBException("Error aborting transation: " +
+                        nativeTransaction.getError().getName()));
+                abortCallback = null;
             }
         });
     }
@@ -95,15 +83,8 @@ public class Transaction implements AutoCloseable {
     @Async
     private native void waitForAbort();
 
-    private void waitForAbort(final AsyncCallback<Void> callback) {
-        EventListener<Event> listener = new EventListener<Event>() {
-            @Override public void handleEvent(Event evt) {
-                nativeTransaction.removeEventListener("abort", this);
-                callback.complete(null);
-            }
-        };
-        nativeTransaction.addEventListener("abort", listener);
-        nativeTransaction.abort();
+    private void waitForAbort(AsyncCallback<Void> callback) {
+        abortCallback = callback;
     }
 
     public void commit() {
