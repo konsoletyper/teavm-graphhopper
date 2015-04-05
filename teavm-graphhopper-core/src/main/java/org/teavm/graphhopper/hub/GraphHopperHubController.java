@@ -86,12 +86,15 @@ public class GraphHopperHubController {
                 GraphHopperMapController mapController = mapControllers.get(map.getId());
                 if (mapController == null) {
                     mapController = new GraphHopperMapController(map.getId(), this);
-                    mapController.remoteMap = map;
+                    mapControllers.put(map.getId(), mapController);
                 }
+                mapController.remoteMap = map;
             }
         }
+        pendingChanges = false;
         for (GraphHopperHubListener listener : listeners) {
             listener.updated();
+            listener.pendingStatusChanged();
         }
     }
 
@@ -118,7 +121,7 @@ public class GraphHopperHubController {
                     break;
                 }
                 try {
-                    threadMonitor.wait(30 * 60000);
+                    threadMonitor.wait(10000);
                 } catch (InterruptedException e) {
                     break;
                 }

@@ -64,7 +64,6 @@ public class IndexedDBFile implements AutoCloseable {
             Store properties = tx.store("properties");
             properties.put(Property.create(name, "size", JS.wrap(size + data.length)));
             Store chunks = tx.store("chunks");
-            chunks.clear();
             int index = size / clusterSize;
             int pos = size % clusterSize;
             for (int i = 0; i < data.length;) {
@@ -220,7 +219,7 @@ public class IndexedDBFile implements AutoCloseable {
         }
 
         private void nextChunk() throws IOException {
-            currentChunk = (Chunk)tx.store("chunks").get(chunkKey(file, chunkIndex));
+            currentChunk = (Chunk)tx.store("chunks").get(chunkKey(file, ++chunkIndex));
             if (JS.isUndefined(currentChunk)) {
                 throw new IOException("File broken");
             }

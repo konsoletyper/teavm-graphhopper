@@ -2,13 +2,30 @@ package org.teavm.graphhopper.hub;
 
 import java.io.IOException;
 import org.teavm.graphhopper.util.Ajax;
+import org.teavm.jso.JSObject;
 import org.teavm.jso.JSProperty;
 
 /**
  *
  * @author Alexey Andreev
  */
-public abstract class GraphHopperRemoteMap extends GraphHopperLocalMap {
+public abstract class GraphHopperRemoteMap extends GraphHopperLocalMap implements JSObject {
+    @Override
+    @JSProperty
+    public abstract String getId();
+
+    @Override
+    @JSProperty
+    public abstract String getName();
+
+    @Override
+    @JSProperty
+    public abstract int getSizeInBytes();
+
+    @Override
+    @JSProperty
+    public abstract String getLastModified();
+
     @JSProperty
     public abstract String getBaseUrl();
 

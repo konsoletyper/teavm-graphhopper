@@ -63,13 +63,14 @@ public class GraphHopperMapController {
         if (isLocal() || isDownloading()) {
             throw new IllegalStateException("Map " + id + " is already downloaded");
         }
-        if (isRemote()) {
+        if (!isRemote()) {
             throw new IllegalStateException("Map " + id + " does not exist remotely");
         }
         remote = remoteMap;
         bytesDownloaded = 0;
         hubController.hub.upload(remote, remote.open(), new GraphHopperMapUploadListener() {
             @Override public void progress(int bytes) {
+                bytesDownloaded = bytes;
                 for (GraphHopperHubListener listener : hubController.listeners) {
                     listener.mapStatusChanged(id);
                 }
@@ -83,6 +84,7 @@ public class GraphHopperMapController {
                 }
             }
             @Override public void complete() {
+                localMap = hubController.hub.getMap(id);
                 for (GraphHopperHubListener listener : hubController.listeners) {
                     listener.mapStatusChanged(id);
                 }

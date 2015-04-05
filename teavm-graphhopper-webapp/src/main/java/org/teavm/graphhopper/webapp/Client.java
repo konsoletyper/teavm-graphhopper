@@ -52,22 +52,24 @@ public class Client {
     private HTMLButtonElement refreshButton = (HTMLButtonElement)document.getElementById("refresh-button");
     private HTMLElement hubRows = document.getElementById("hub-rows");
     private HTMLElement initializingIndicator = document.getElementById("initializing-indicator");
+    private HTMLElement onlineIndicator = document.getElementById("online-indicator");
     private GraphHopperUI ui;
     private GraphHopperHubController controller;
     private List<MapWrapper> maps = new ArrayList<>();
 
     public static void main(String[] args) {
-        new Client().start(args.length > 0 ? args[0] : "maps");
+        new Client().start(args.length > 0 ? args[0] : "maps/graphhopper.json");
     }
 
     public void start(String hubUrl) {
         ui = new GraphHopperUI(document.getElementById("map"));
-        installHub(hubUrl);
+        EventLoop.submit(() -> installHub(hubUrl));
         installControlPanel();
     }
 
     private void installHub(String url) {
         controller = new GraphHopperHubController(url);
+        controller.setRemoteConnection(true);
         controller.addListener(new GraphHopperHubListener() {
             @Override public void updated() {
                 updateRows();
@@ -79,6 +81,8 @@ public class Client {
                 for (int i = 0; i < maps.size(); ++i) {
                     updateRow(i);
                 }
+                removeTextContent(onlineIndicator);
+                onlineIndicator.appendChild(document.createTextNode(controller.isOffline() ? "offline" : "online"));
             }
             @Override public void mapStatusChanged(String mapId) {
                 for (int i = 0; i < maps.size(); ++i) {
@@ -138,7 +142,7 @@ public class Client {
 
         if (wrapper.map.isDownloading()) {
             wrapper.status.appendChild(document.createTextNode("Downloading (" +
-                    wrapper.map.getBytesDownloaded() + " of " + wrapper.map.getSizeInBytes()));
+                    wrapper.map.getBytesDownloaded() + " of " + wrapper.map.getSizeInBytes() + ")"));
         } else if (wrapper.map.isRemote() && !wrapper.map.isLocal() && !controller.isOffline()) {
             HTMLButtonElement downloadButton = (HTMLButtonElement)document.createElement("button");
             downloadButton.addEventListener("click", e -> EventLoop.submit(wrapper.map::download));

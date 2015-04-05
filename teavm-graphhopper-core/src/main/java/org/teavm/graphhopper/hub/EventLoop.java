@@ -19,6 +19,11 @@ public class EventLoop {
             thread.start();
         }
         queue.add(runnable);
+        new Thread(() -> {
+            synchronized (queue) {
+                queue.notifyAll();
+            }
+        }).start();
     }
 
     private static void runEventLoop() {
