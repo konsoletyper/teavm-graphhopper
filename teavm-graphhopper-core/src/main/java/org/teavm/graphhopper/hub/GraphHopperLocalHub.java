@@ -99,9 +99,6 @@ public class GraphHopperLocalHub {
         new Thread(() -> {
             IndexedDBFile file = null;
             try {
-                try (Transaction tx = database.begin(TransactionMode.READ_WRITE, "maps")) {
-                    tx.store("maps").put(map);
-                }
                 file = fs.file(map.getId());
                 file.clear();
                 int pos = 0;
@@ -131,6 +128,9 @@ public class GraphHopperLocalHub {
                     }
                 });
                 return;
+            }
+            try (Transaction tx = database.begin(TransactionMode.READ_WRITE, "maps")) {
+                tx.store("maps").put(map);
             }
             submit(() -> {
                 uploadingMaps.remove(map.getId());
