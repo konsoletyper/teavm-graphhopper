@@ -71,7 +71,7 @@ public class IndexedDBFile implements AutoCloseable {
                 Chunk chunk = Chunk.create(name, index, chunkSize);
                 Int8Array chunkData = chunk.getData();
                 if (pos > 0) {
-                    Chunk oldChunk = (Chunk)tx.store("chunks").get(chunkKey(name, index));
+                    Chunk oldChunk = (Chunk)chunks.get(chunkKey(name, index));
                     Int8Array oldData = oldChunk.getData();
                     for (int j = 0; j < oldData.getLength(); ++j) {
                         chunkData.set(j, oldData.get(j));
@@ -84,6 +84,27 @@ public class IndexedDBFile implements AutoCloseable {
                 ++index;
                 pos = 0;
             }
+        }
+    }
+
+    public int read(int position, byte[] data, int offset, int len) throws IOException {
+        try (Transaction tx = database.begin("chunks", "properties")) {
+            int size = size(tx);
+            Store chunks = tx.store("chunks");
+            int index = position / clusterSize;
+            int pos = position % clusterSize;
+            int remaining = Math.min(size - position, len);
+            for (int i = 0; i < remaining; ++i) {
+                Chunk chunk = (Chunk)chunks.get(chunkKey(name, index));
+                Int8Array chunkData = chunk.getData();
+                int sz = Math.min(chunkData.getLength() - pos, data.length - offset);
+                for (int j = 0; j < sz; ++j) {
+                    data[offset++] = chunkData.get(pos++);
+                }
+                ++index;
+                pos = 0;
+            }
+            return remaining;
         }
     }
 

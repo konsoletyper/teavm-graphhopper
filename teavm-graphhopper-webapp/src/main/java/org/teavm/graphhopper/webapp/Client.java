@@ -20,16 +20,27 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.mapsforge.core.model.LatLong;
+import org.mapsforge.map.layer.cache.InMemoryTileCache;
+import org.mapsforge.map.layer.cache.TileCache;
+import org.mapsforge.map.layer.renderer.TileRendererLayer;
+import org.mapsforge.map.model.DisplayModel;
+import org.mapsforge.map.model.MapViewPosition;
+import org.mapsforge.map.reader.MapDataStore;
 import org.teavm.dom.browser.Window;
+import org.teavm.dom.canvas.CanvasRenderingContext2D;
 import org.teavm.dom.core.Node;
 import org.teavm.dom.css.ElementCSSInlineStyle;
 import org.teavm.dom.html.HTMLButtonElement;
+import org.teavm.dom.html.HTMLCanvasElement;
 import org.teavm.dom.html.HTMLDocument;
 import org.teavm.dom.html.HTMLElement;
 import org.teavm.graphhopper.hub.EventLoop;
 import org.teavm.graphhopper.hub.GraphHopperHubController;
 import org.teavm.graphhopper.hub.GraphHopperHubListener;
 import org.teavm.graphhopper.hub.GraphHopperMapController;
+import org.teavm.graphhopper.mapsforge.HTML5Canvas;
+import org.teavm.graphhopper.mapsforge.HTML5GraphicFactory;
 import org.teavm.jso.JS;
 
 /**
@@ -65,6 +76,17 @@ public class Client {
         ui = new GraphHopperUI(document.getElementById("map"));
         EventLoop.submit(() -> installHub(hubUrl));
         installControlPanel();
+        HTMLCanvasElement canvasElement = (HTMLCanvasElement)document.getElementById("mapsforge");
+        CanvasRenderingContext2D context = (CanvasRenderingContext2D)canvasElement.getContext("2d");
+        HTML5Canvas canvas = new HTML5Canvas(context);
+        HTML5GraphicFactory graphicFactory = new HTML5GraphicFactory(context);
+        TileCache tileCache = new InMemoryTileCache(10000);
+        MapDataStore dataStore = null;
+        DisplayModel displayModel = new DisplayModel();
+        MapViewPosition position = new MapViewPosition(displayModel);
+        position.setCenter(new LatLong(50.854975, 4.3753899));
+        position.setPivot(position.getPivot());
+        TileRendererLayer layer = new TileRendererLayer(tileCache, dataStore, position, true, true, graphicFactory);
     }
 
     private void installHub(String url) {
