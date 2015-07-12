@@ -24,7 +24,7 @@ import org.teavm.jso.JSProperty;
 public class IndexedDBFile implements AutoCloseable {
     private Database database;
     private String name;
-    private int clusterSize = 4096;
+    private int clusterSize = 16384;
 
     IndexedDBFile(IndexedDBFileSystem fs, String name) {
         database = fs.database;
