@@ -20,8 +20,14 @@ import com.graphhopper.routing.util.CarFlagEncoder;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.storage.DataAccess;
 import com.graphhopper.storage.GHDirectory;
+import com.graphhopper.storage.GraphHopperStorage;
 import com.graphhopper.util.shapes.BBox;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  *
@@ -52,7 +58,8 @@ public class GraphHopperFileBuilder {
                 .setEncodingManager(new EncodingManager(new CarFlagEncoder()));
         gh.importOrLoad();
 
-        GHDirectory dir = (GHDirectory)gh.getGraph().getDirectory();
+        GraphHopperStorage graph = gh.getGraphHopperStorage().getGraph(GraphHopperStorage.class);
+        GHDirectory dir = (GHDirectory)graph.getDirectory();
         output.writeShort(dir.getAll().size());
         for (DataAccess da : dir.getAll()) {
             output.writeUTF(da.getName());
@@ -70,7 +77,7 @@ public class GraphHopperFileBuilder {
             }
         }
 
-        bounds = gh.getGraph().getBounds();
+        bounds = graph.getBounds();
     }
 
     public BBox getBounds() {

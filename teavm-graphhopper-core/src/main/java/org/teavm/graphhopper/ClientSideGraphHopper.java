@@ -25,8 +25,10 @@ import com.graphhopper.routing.util.FastestWeighting;
 import com.graphhopper.routing.util.FlagEncoder;
 import com.graphhopper.routing.util.TraversalMode;
 import com.graphhopper.routing.util.Weighting;
+import com.graphhopper.storage.CHGraph;
 import com.graphhopper.storage.Directory;
-import com.graphhopper.storage.LevelGraphStorage;
+import com.graphhopper.storage.GraphExtension.NoOpExtension;
+import com.graphhopper.storage.GraphHopperStorage;
 import com.graphhopper.storage.index.LocationIndexTree;
 import com.graphhopper.util.shapes.BBox;
 import org.slf4j.Logger;
@@ -38,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ClientSideGraphHopper {
     private static final Logger logger = LoggerFactory.getLogger(ClientSideGraphHopper.class);
-    private LevelGraphStorage graph;
+    private GraphHopperStorage graph;
     private EncodingManager encodingManager;
     private LocationIndexTree locationIndex;
     private FlagEncoder encoder;
@@ -52,15 +54,15 @@ public class ClientSideGraphHopper {
         long start = System.currentTimeMillis();
         encoder = new CarFlagEncoder();
         encodingManager = new EncodingManager(encoder);
-        graph = new LevelGraphStorage(directory, encodingManager, true);
+        graph = new GraphHopperStorage(directory, encodingManager, true, new NoOpExtension());
         graph.loadExisting();
 
-        locationIndex = new LocationIndexTree(graph.getBaseGraph(), directory);
+        locationIndex = new LocationIndexTree(graph, directory);
         locationIndex.loadExisting();
 
         weighting = new FastestWeighting(encoder);
-        prepare = new PrepareContractionHierarchies(directory, graph, encoder, weighting,
-                TraversalMode.NODE_BASED);
+        prepare = new PrepareContractionHierarchies(directory, graph, graph.getGraph(CHGraph.class),
+                encoder, weighting, TraversalMode.NODE_BASED);
 
         if (logger.isInfoEnabled()) {
             logger.info("GraphHopper initialized in {}ms", System.currentTimeMillis() - start);
