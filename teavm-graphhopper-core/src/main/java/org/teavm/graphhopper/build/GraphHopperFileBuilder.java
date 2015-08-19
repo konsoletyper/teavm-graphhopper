@@ -58,7 +58,7 @@ public class GraphHopperFileBuilder {
                 .setEncodingManager(new EncodingManager(new CarFlagEncoder()));
         gh.importOrLoad();
 
-        GraphHopperStorage graph = gh.getGraphHopperStorage().getGraph(GraphHopperStorage.class);
+        GraphHopperStorage graph = gh.getGraphHopperStorage();
         GHDirectory dir = (GHDirectory)graph.getDirectory();
         output.writeShort(dir.getAll().size());
         for (DataAccess da : dir.getAll()) {

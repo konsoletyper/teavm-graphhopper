@@ -15,6 +15,7 @@
  */
 package org.teavm.graphhopper;
 
+import java.util.Arrays;
 import com.graphhopper.routing.AlgorithmOptions;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.RoutingAlgorithm;
@@ -54,13 +55,14 @@ public class ClientSideGraphHopper {
         long start = System.currentTimeMillis();
         encoder = new CarFlagEncoder();
         encodingManager = new EncodingManager(encoder);
-        graph = new GraphHopperStorage(directory, encodingManager, true, new NoOpExtension());
+        weighting = new FastestWeighting(encoder);
+        graph = new GraphHopperStorage(Arrays.asList(weighting), directory, encodingManager, true,
+                new NoOpExtension());
         graph.loadExisting();
 
         locationIndex = new LocationIndexTree(graph, directory);
         locationIndex.loadExisting();
 
-        weighting = new FastestWeighting(encoder);
         prepare = new PrepareContractionHierarchies(directory, graph, graph.getGraph(CHGraph.class),
                 encoder, weighting, TraversalMode.NODE_BASED);
 
